@@ -101,7 +101,7 @@ class StorageService {
 const storageService = new StorageService();
 
 // Auto-save saga (debounced to avoid excessive saves)
-function* handleAutoSave() {
+function* handleAutoSave(): Generator<any, void, any> {
   try {
     const state: RootState = yield select();
     const resumeData = state.resume;
@@ -118,7 +118,7 @@ function* handleAutoSave() {
 }
 
 // Manual cloud save
-function* handleSaveToCloud() {
+function* handleSaveToCloud(): Generator<any, void, any> {
   try {
     const state: RootState = yield select();
     const resumeData = state.resume;
@@ -140,7 +140,7 @@ function* handleSaveToCloud() {
 }
 
 // Load from cloud on login
-export function* handleLoadFromCloud(action: PayloadAction<string>) {
+export function* handleLoadFromCloud(action: PayloadAction<string>): Generator<any, void, any> {
   try {
     const accessToken = action.payload;
     const state: RootState = yield select();
@@ -172,15 +172,15 @@ export function* handleLoadFromCloud(action: PayloadAction<string>) {
 }
 
 // Watchers
-export function* watchAutoSave() {
+export function* watchAutoSave(): Generator<any, void, any> {
   // Debounce auto-save to every 2 seconds
   yield debounce(2000, autoSave.type, handleAutoSave);
 }
 
-export function* watchSaveToCloud() {
+export function* watchSaveToCloud(): Generator<any, void, any> {
   yield takeEvery(saveToCloud.type, handleSaveToCloud);
 }
 
-export function* watchLoadFromCloud() {
+export function* watchLoadFromCloud(): Generator<any, void, any> {
   yield takeEvery('auth/loadFromCloud', handleLoadFromCloud);
 }

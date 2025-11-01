@@ -96,7 +96,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
               <TrendingUp className="h-12 w-12 text-blue-600 mb-2" />
               <CardTitle>Resume Analysis</CardTitle>
               <CardDescription>
-                Get real-time feedback and scoring to improve your resume's effectiveness
+                Get real-time feedback and scoring to improve your resume&apos;s effectiveness
               </CardDescription>
             </CardHeader>
           </Card>

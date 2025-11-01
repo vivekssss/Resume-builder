@@ -337,7 +337,7 @@ export function ResumeUploader() {
           {uploadStatus === "error" && (
             <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-xs text-yellow-800 font-medium mb-1">
-                ⚠️ Couldn't automatically parse your resume
+                ⚠️ Couldn&apos;t automatically parse your resume
               </p>
               <p className="text-xs text-yellow-700">
                 <strong>Possible reasons:</strong>
@@ -347,8 +347,8 @@ export function ResumeUploader() {
                 <li>File is password protected or encrypted</li>
                 <li>AI service is temporarily unavailable</li>
               </ul>
-              <p className="text-xs text-yellow-700 mt-2">
-                <strong>Try:</strong> Use the "Sample Resume" button below or fill forms manually.
+              <p className="text-xs text-yellow-700">
+                <strong>Try:</strong> Use the &quot;Sample Resume&quot; button below or fill forms manually.
               </p>
             </div>
           )}

@@ -245,12 +245,12 @@ export function ExperienceForm() {
         <div>
           <Label>Responsibilities & Achievements *</Label>
           <div className="space-y-3 mt-2">
-            {formData.description.map((bullet, index) => (
+            {formData.description?.map((bullet, index) => (
               <div key={index} className="space-y-2">
                 <RichTextarea
                   value={bullet}
                   onChange={(value) => {
-                    const newDescription = [...formData.description];
+                    const newDescription = [...(formData.description || [])];
                     newDescription[index] = value;
                     setFormData({ ...formData, description: newDescription });
                   }}
@@ -283,7 +283,7 @@ export function ExperienceForm() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      const newDescription = formData.description.filter((_, i) => i !== index);
+                      const newDescription = (formData.description || []).filter((_, i) => i !== index);
                       setFormData({ ...formData, description: newDescription });
                     }}
                   >
@@ -296,7 +296,7 @@ export function ExperienceForm() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setFormData({ ...formData, description: [...formData.description, ''] })}
+              onClick={() => setFormData({ ...formData, description: [...(formData.description || []), ''] })}
               className="w-full"
             >
               <Plus className="h-4 w-4 mr-2" />

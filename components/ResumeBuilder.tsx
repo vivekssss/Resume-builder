@@ -18,7 +18,6 @@ import { GoogleAuthButton } from "./GoogleAuthButton";
 import { AutoSaveIndicator } from "./AutoSaveIndicator";
 import { DataRestoreButton } from "./DataRestoreButton";
 import { RestorePreviewDrawer } from "./RestorePreviewDrawer";
-import { DebugStore } from "./DebugStore";
 import { Download, FileText, Sparkles, BarChart3, ArrowLeft, ChevronLeft, ChevronRight, Share2, FileImage, FileDown } from "lucide-react";
 import {
   DropdownMenu,
@@ -409,9 +408,6 @@ export function ResumeBuilder({ onBack }: ResumeBuilderProps) {
           </div>
         </div>
       </div>
-      
-      {/* Debug Component - Remove in production */}
-      <DebugStore />
     </div>
   );
 }

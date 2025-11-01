@@ -101,7 +101,6 @@ export function GoogleTemplate() {
               <div className="flex justify-between">
                 <div>
                   <h3 className="font-bold text-gray-900 text-sm">{edu.degree} {edu.field && `· ${edu.field}`}</h3>
-                  <p className="text-gray-700">{renderMarkdown(edu.description)}</p>
                 </div>
                 <span className="text-xs text-gray-500">{edu.graduationDate}</span>
               </div>
