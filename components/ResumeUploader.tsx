@@ -14,6 +14,8 @@ export function ResumeUploader() {
   const { populateFromAI } = useResumeStore();
 
   const loadSampleResume = () => {
+    console.log('🎯 Loading sample resume data...');
+    
     const sampleData = {
       personalInfo: {
         fullName: "John Smith",
@@ -68,8 +70,18 @@ export function ResumeUploader() {
       achievements: ["Hackathon Winner 2022", "Employee of the Quarter Q3 2023"]
     };
     
+    console.log('📋 Sample data prepared:', sampleData);
     populateFromAI(sampleData);
     setUploadStatus("success");
+    
+    // Debug: Check if data was populated
+    setTimeout(() => {
+      // Import store to get state
+      import("@/lib/store").then(({ useResumeStore }) => {
+        const currentState = useResumeStore.getState();
+        console.log('🔍 Current store state after population:', currentState.resumeData);
+      });
+    }, 100);
   };
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -80,26 +92,41 @@ export function ResumeUploader() {
     setUploadStatus("idle");
 
     try {
+      console.log(`Processing file: ${file.name}, Type: ${file.type}, Size: ${file.size} bytes`);
+      
       const text = await extractTextFromFile(file);
       
       if (!text || text.trim().length < 50) {
-        console.warn('Extracted text too short, may need better parsing');
+        console.warn('Extracted text too short:', text?.length || 0, 'characters');
+        console.log('First 200 chars:', text?.substring(0, 200));
         setUploadStatus("error");
         return;
       }
 
-      console.log('Extracted text length:', text.length);
+      console.log('Text extraction successful, length:', text.length);
+      console.log('First 500 characters of extracted text:', text.substring(0, 500));
+      
       const parsedData = await aiService.parseResume(text);
       
       if (parsedData && parsedData.personalInfo) {
+        // Log what was successfully parsed
+        console.log('✅ Successfully parsed:', {
+          name: parsedData.personalInfo.fullName || 'Not found',
+          email: parsedData.personalInfo.email || 'Not found',
+          experienceCount: parsedData.experience?.length || 0,
+          educationCount: parsedData.education?.length || 0,
+          skillsCount: parsedData.skills?.technical?.length || 0
+        });
+        
         populateFromAI(parsedData);
         setUploadStatus("success");
       } else {
-        console.warn('AI parsing returned no data');
+        console.warn('Parsing returned incomplete data');
         setUploadStatus("error");
       }
     } catch (error) {
-      console.error("Upload error:", error);
+      console.error("Resume upload error:", error);
+      console.error('Error details:', (error as Error).message);
       setUploadStatus("error");
     } finally {
       setIsUploading(false);
@@ -121,74 +148,142 @@ export function ResumeUploader() {
     try {
       // Handle plain text files
       if (file.type === 'text/plain') {
+        console.log('Processing text file');
         return await file.text();
       }
       
       // Handle PDF files with dynamic import
       if (file.type === 'application/pdf') {
-        console.log('Extracting text from PDF...');
+        console.log('Processing PDF file...');
         const arrayBuffer = await file.arrayBuffer();
         
-        // Dynamic import to avoid SSR issues
-        const pdfjs = await import('pdfjs-dist');
-        
-        // Set worker path for PDF.js
-        (pdfjs as any).GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${(pdfjs as any).version}/pdf.worker.min.js`;
-        
-        const pdf = await (pdfjs as any).getDocument({ data: arrayBuffer }).promise;
-        let fullText = '';
-        
-        // Extract text from each page
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          const pageText = textContent.items
-            .map((item: any) => item.str)
-            .join(' ');
-          fullText += pageText + '\n';
+        try {
+          // Dynamic import to avoid SSR issues
+          const pdfjs = await import('pdfjs-dist');
+          
+          // Set worker path for PDF.js
+          (pdfjs as any).GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${(pdfjs as any).version}/pdf.worker.min.js`;
+          
+          const loadingTask = (pdfjs as any).getDocument({
+            data: arrayBuffer,
+            verbosity: 0 // Reduce console logging
+          });
+          
+          const pdf = await loadingTask.promise;
+          console.log(`PDF loaded: ${pdf.numPages} pages`);
+          
+          let fullText = '';
+          
+          // Extract text from each page
+          for (let i = 1; i <= pdf.numPages; i++) {
+            try {
+              const page = await pdf.getPage(i);
+              const textContent = await page.getTextContent();
+              const pageText = textContent.items
+                .map((item: any) => item.str)
+                .join(' ');
+              fullText += pageText + '\n';
+              console.log(`Page ${i} extracted: ${pageText.length} characters`);
+            } catch (pageError) {
+              console.warn(`Error extracting page ${i}:`, pageError);
+            }
+          }
+          
+          // Clean up the text
+          fullText = fullText
+            .replace(/\s+/g, ' ') // Normalize whitespace
+            .replace(/([a-z])([A-Z])/g, '$1 $2') // Add spaces between camelCase
+            .trim();
+          
+          console.log('PDF text extraction complete, total length:', fullText.length);
+          
+          if (fullText.length < 50) {
+            console.warn('PDF appears to be empty or scanned image');
+            throw new Error('PDF contains no extractable text (might be a scanned image)');
+          }
+          
+          return fullText;
+        } catch (pdfError) {
+          console.error('PDF.js error:', pdfError);
+          throw new Error('Failed to parse PDF. File might be corrupted or password-protected.');
         }
-        
-        console.log('PDF text extracted, length:', fullText.length);
-        return fullText;
       }
       
       // Handle DOCX files with dynamic import
       if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        console.log('Extracting text from DOCX...');
+        console.log('Processing DOCX file...');
         const arrayBuffer = await file.arrayBuffer();
         
-        // Dynamic import to avoid SSR issues
-        const mammothLib = await import('mammoth');
-        const result = await (mammothLib as any).extractRawText({ arrayBuffer });
-        
-        console.log('DOCX text extracted, length:', result.value.length);
-        return result.value;
+        try {
+          // Dynamic import to avoid SSR issues
+          const mammothLib = await import('mammoth');
+          const result = await (mammothLib as any).extractRawText({ arrayBuffer });
+          
+          const text = result.value
+            .replace(/\s+/g, ' ') // Normalize whitespace
+            .trim();
+          
+          console.log('DOCX text extraction complete, length:', text.length);
+          
+          if (text.length < 50) {
+            throw new Error('DOCX file appears to be empty');
+          }
+          
+          return text;
+        } catch (docxError) {
+          console.error('DOCX extraction error:', docxError);
+          throw new Error('Failed to parse DOCX file');
+        }
       }
       
       // Handle DOC files (older Word format)
       if (file.type === 'application/msword') {
-        console.log('Extracting text from DOC...');
+        console.log('Processing DOC file...');
         const arrayBuffer = await file.arrayBuffer();
         try {
           const mammothLib = await import('mammoth');
           const result = await (mammothLib as any).extractRawText({ arrayBuffer });
-          return result.value;
+          
+          const text = result.value
+            .replace(/\s+/g, ' ')
+            .trim();
+          
+          console.log('DOC text extraction complete, length:', text.length);
+          return text;
         } catch (error) {
-          console.warn('DOC parsing with mammoth failed, trying text extraction');
+          console.warn('DOC parsing with mammoth failed, trying fallback extraction');
           // Fallback for older DOC files
           const text = await file.text();
-          const readable = text.replace(/[^\x20-\x7E\n]/g, ' ').trim();
+          const readable = text
+            .replace(/[^\x20-\x7E\n]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+          
+          if (readable.length < 50) {
+            throw new Error('DOC file format not supported or file is empty');
+          }
+          
           return readable;
         }
       }
       
       // Fallback for unknown types
-      console.warn('Unknown file type, attempting text extraction');
-      return await file.text();
+      console.warn(`Unknown file type: ${file.type}, attempting text extraction`);
+      const text = await file.text();
+      const cleaned = text
+        .replace(/[^\x20-\x7E\n]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      if (cleaned.length < 50) {
+        throw new Error('File type not supported or file is empty');
+      }
+      
+      return cleaned;
       
     } catch (error) {
       console.error('Text extraction error:', error);
-      throw new Error('Failed to extract text from file');
+      throw error; // Re-throw with original error message
     }
   };
 
@@ -257,6 +352,19 @@ export function ResumeUploader() {
               </p>
             </div>
           )}
+        </div>
+
+        <div className="mt-4 flex items-center gap-3 justify-center">
+          <div className="text-xs text-gray-500">or</div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={loadSampleResume}
+            className="flex items-center gap-2"
+          >
+            <Sparkles className="h-4 w-4" />
+            Use Sample Resume
+          </Button>
         </div>
 
         <div className="mt-4 text-xs text-gray-500">

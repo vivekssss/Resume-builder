@@ -74,9 +74,16 @@ export function GoogleTemplate() {
             <div key={project.id} className="mb-3 pl-4">
               <h3 className="font-bold text-gray-900 text-sm">{project.name}</h3>
               <p className="text-sm text-gray-700 mt-1">{project.description}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                <span className="font-semibold">Tech:</span> {project.technologies.join(", ")}
-              </p>
+              {project.technologies && project.technologies.length > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  <span className="font-semibold">Tech:</span> {project.technologies.join(", ")}
+                </p>
+              )}
+              {project.link && (
+                <p className="text-xs text-green-600 mt-0.5">
+                  <span className="font-semibold">Link:</span> {project.link}
+                </p>
+              )}
             </div>
           ))}
         </div>

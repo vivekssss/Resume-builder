@@ -62,6 +62,10 @@ export function DataRestoreButton() {
       if (stored) {
         const data = JSON.parse(stored);
         
+        // IMPORTANT: Clear existing data first to prevent duplicates
+        console.log('🗑️  Clearing existing data to prevent duplicates...');
+        store.clearAllData();
+        
         // Restore all data
         if (data.personalInfo) store.updatePersonalInfo(data.personalInfo);
         if (data.experience) {

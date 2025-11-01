@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-interface PersonalInfo {
+export interface PersonalInfo {
   fullName: string;
   email: string;
   phone: string;
@@ -12,7 +12,7 @@ interface PersonalInfo {
   summary: string;
 }
 
-interface WorkExperience {
+export interface WorkExperience {
   id: string;
   company: string;
   position: string;
@@ -23,7 +23,7 @@ interface WorkExperience {
   description: string[];
 }
 
-interface Education {
+export interface Education {
   id: string;
   institution: string;
   degree: string;
@@ -33,7 +33,7 @@ interface Education {
   location?: string;
 }
 
-interface Project {
+export interface Project {
   id: string;
   name: string;
   description: string;
@@ -41,13 +41,13 @@ interface Project {
   link?: string;
 }
 
-interface Skills {
+export interface Skills {
   technical: string[];
   soft: string[];
   languages: string[];
 }
 
-interface ResumeData {
+export interface ResumeData {
   personalInfo: PersonalInfo;
   experience: WorkExperience[];
   education: Education[];
@@ -57,7 +57,8 @@ interface ResumeData {
   achievements: string[];
 }
 
-interface ResumeStore extends ResumeData {
+interface ResumeStore {
+  resumeData: ResumeData;
   selectedTemplate: string;
   updatePersonalInfo: (info: Partial<PersonalInfo>) => void;
   addExperience: (exp: WorkExperience) => void;
@@ -66,11 +67,11 @@ interface ResumeStore extends ResumeData {
   addEducation: (edu: Education) => void;
   updateEducation: (id: string, edu: Partial<Education>) => void;
   deleteEducation: (id: string) => void;
-  updateSkills: (skills: Partial<Skills>) => void;
   addProject: (project: Project) => void;
   updateProject: (id: string, project: Partial<Project>) => void;
   deleteProject: (id: string) => void;
-  updateCertifications: (certs: string[]) => void;
+  updateSkills: (skills: Partial<Skills>) => void;
+  updateCertifications: (certifications: string[]) => void;
   updateAchievements: (achievements: string[]) => void;
   setTemplate: (template: string) => void;
   populateFromAI: (data: any) => void;
@@ -102,7 +103,9 @@ const initialState: ResumeData = {
   achievements: [],
 };
 
-export const useResumeStore = create<ResumeStore>((set) => ({
+export const useResumeStore = create<ResumeStore>()(
+  persist(
+    (set) => ({
   resumeData: initialState,
   selectedTemplate: 'modern',
   
@@ -214,7 +217,7 @@ export const useResumeStore = create<ResumeStore>((set) => ({
     const updates: any = {};
     
     if (data.personalInfo) {
-      updates.personalInfo = { ...state.personalInfo, ...data.personalInfo };
+      updates.personalInfo = { ...state.resumeData.personalInfo, ...data.personalInfo };
     }
     if (data.experience) {
       updates.experience = data.experience;
@@ -223,7 +226,7 @@ export const useResumeStore = create<ResumeStore>((set) => ({
       updates.education = data.education;
     }
     if (data.skills) {
-      updates.skills = { ...state.skills, ...data.skills };
+      updates.skills = { ...state.resumeData.skills, ...data.skills };
     }
     if (data.projects) {
       updates.projects = data.projects;
@@ -235,7 +238,19 @@ export const useResumeStore = create<ResumeStore>((set) => ({
       updates.achievements = data.achievements;
     }
     
-    return updates;
+    console.log('🔄 Populating resume data:', updates);
+    console.log('📝 Current state before update:', state.resumeData);
+    
+    const newResumeData = {
+      ...state.resumeData,
+      ...updates
+    };
+    
+    console.log('✨ New resume data after update:', newResumeData);
+    
+    return {
+      resumeData: newResumeData
+    };
   }),
 
   loadFromStorage: () => {
@@ -282,4 +297,13 @@ export const useResumeStore = create<ResumeStore>((set) => ({
   setTemplate: (template) => set({ selectedTemplate: template }),
   
   resetResume: () => set({ resumeData: initialState }),
-}));
+}),
+    {
+      name: 'resume-storage',
+      partialize: (state) => ({
+        resumeData: state.resumeData,
+        selectedTemplate: state.selectedTemplate,
+      }),
+    }
+  )
+);

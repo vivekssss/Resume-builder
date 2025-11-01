@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LocalStorage Debug Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        h1 { color: #333; }
+        .section { margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 4px; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #272822; color: #f8f8f2; padding: 15px; border-radius: 4px; overflow-x: auto; }
+        .key { color: #66d9ef; }
+        .value { color: #a6e22e; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #007bff; color: white; }
+        .empty { color: #999; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 LocalStorage Debug Tool</h1>
+        
+        <div class="section">
+            <h2>All LocalStorage Keys</h2>
+            <button onclick="showAllKeys()">Refresh Keys</button>
+            <button onclick="clearAll()">Clear All</button>
+            <div id="allKeys"></div>
+        </div>
+
+        <div class="section">
+            <h2>Resume Data (resume_data)</h2>
+            <button onclick="showResumeData()">Show Data</button>
+            <button onclick="formatResumeData()">Format JSON</button>
+            <div id="resumeData"></div>
+        </div>
+
+        <div class="section">
+            <h2>Quick Actions</h2>
+            <button onclick="copyResumeData()">Copy Resume Data</button>
+            <button onclick="deleteResumeData()">Delete Resume Data</button>
+            <button onclick="testRestore()">Test Restore Logic</button>
+        </div>
+
+        <div class="section">
+            <h2>Storage Info</h2>
+            <div id="storageInfo"></div>
+        </div>
+    </div>
+
+    <script>
+        function showAllKeys() {
+            const div = document.getElementById('allKeys');
+            let html = '<table><tr><th>Key</th><th>Size (bytes)</th><th>Type</th><th>Actions</th></tr>';
+            
+            if (localStorage.length === 0) {
+                html = '<p class="empty">No data in localStorage</p>';
+            } else {
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    const value = localStorage.getItem(key);
+                    const size = value ? value.length : 0;
+                    let type = 'string';
+                    try {
+                        JSON.parse(value);
+                        type = 'JSON';
+                    } catch(e) {}
+                    
+                    html += `<tr>
+                        <td><strong>${key}</strong></td>
+                        <td>${size} bytes</td>
+                        <td>${type}</td>
+                        <td>
+                            <button onclick="viewKey('${key}')">View</button>
+                            <button onclick="deleteKey('${key}')">Delete</button>
+                        </td>
+                    </tr>`;
+                }
+            }
+            html += '</table>';
+            div.innerHTML = html;
+            updateStorageInfo();
+        }
+
+        function viewKey(key) {
+            const value = localStorage.getItem(key);
+            try {
+                const parsed = JSON.parse(value);
+                alert(JSON.stringify(parsed, null, 2));
+            } catch(e) {
+                alert(value);
+            }
+        }
+
+        function deleteKey(key) {
+            if (confirm(`Delete ${key}?`)) {
+                localStorage.removeItem(key);
+                showAllKeys();
+            }
+        }
+
+        function showResumeData() {
+            const div = document.getElementById('resumeData');
+            const data = localStorage.getItem('resume_data');
+            
+            if (!data) {
+                div.innerHTML = '<p class="empty">No resume_data found</p>';
+                return;
+            }
+
+            try {
+                const parsed = JSON.parse(data);
+                let html = '<h3>Raw Data:</h3>';
+                html += `<pre>${data.substring(0, 500)}...</pre>`;
+                html += '<h3>Parsed Structure:</h3>';
+                html += `<pre>${JSON.stringify(parsed, null, 2).substring(0, 1000)}...</pre>`;
+                
+                // Show structure
+                html += '<h3>Data Structure:</h3><ul>';
+                for (const key in parsed) {
+                    const value = parsed[key];
+                    const type = Array.isArray(value) ? `Array(${value.length})` : typeof value;
+                    html += `<li><strong>${key}</strong>: ${type}</li>`;
+                }
+                html += '</ul>';
+                
+                div.innerHTML = html;
+            } catch(e) {
+                div.innerHTML = `<p style="color:red;">Error parsing: ${e.message}</p>`;
+            }
+        }
+
+        function formatResumeData() {
+            const data = localStorage.getItem('resume_data');
+            if (!data) {
+                alert('No resume_data found');
+                return;
+            }
+            try {
+                const parsed = JSON.parse(data);
+                const formatted = JSON.stringify(parsed, null, 2);
+                const div = document.getElementById('resumeData');
+                div.innerHTML = `<pre>${formatted}</pre>`;
+            } catch(e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        function copyResumeData() {
+            const data = localStorage.getItem('resume_data');
+            if (!data) {
+                alert('No data to copy');
+                return;
+            }
+            navigator.clipboard.writeText(data).then(() => {
+                alert('✅ Resume data copied to clipboard!');
+            });
+        }
+
+        function deleteResumeData() {
+            if (confirm('Delete resume_data?')) {
+                localStorage.removeItem('resume_data');
+                localStorage.removeItem('resume_timestamp');
+                alert('✅ Deleted');
+                showAllKeys();
+                showResumeData();
+            }
+        }
+
+        function testRestore() {
+            const data = localStorage.getItem('resume_data');
+            if (!data) {
+                alert('No data to test');
+                return;
+            }
+
+            try {
+                const parsed = JSON.parse(data);
+                let report = 'Restore Test Results:\n\n';
+                
+                // Check structure
+                let resumeData = parsed;
+                if (parsed.state) {
+                    report += '✅ Found .state wrapper (zustand)\n';
+                    resumeData = parsed.state;
+                }
+                if (parsed.resumeData) {
+                    report += '✅ Found .resumeData wrapper\n';
+                    resumeData = parsed.resumeData;
+                }
+                
+                // Check fields
+                report += '\nData Fields:\n';
+                report += `- personalInfo: ${resumeData.personalInfo ? '✅ Found' : '❌ Missing'}\n`;
+                if (resumeData.personalInfo) {
+                    report += `  - fullName: ${resumeData.personalInfo.fullName || 'N/A'}\n`;
+                    report += `  - email: ${resumeData.personalInfo.email || 'N/A'}\n`;
+                }
+                report += `- experience: ${resumeData.experience ? `✅ ${resumeData.experience.length} items` : '❌ Missing'}\n`;
+                report += `- education: ${resumeData.education ? `✅ ${resumeData.education.length} items` : '❌ Missing'}\n`;
+                report += `- skills: ${resumeData.skills ? '✅ Found' : '❌ Missing'}\n`;
+                report += `- projects: ${resumeData.projects ? `✅ ${resumeData.projects.length} items` : '❌ Missing'}\n`;
+                
+                alert(report);
+            } catch(e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        function clearAll() {
+            if (confirm('Clear ALL localStorage? This cannot be undone!')) {
+                localStorage.clear();
+                showAllKeys();
+                showResumeData();
+                alert('✅ All data cleared');
+            }
+        }
+
+        function updateStorageInfo() {
+            let totalSize = 0;
+            for (let i = 0; i < localStorage.length; i++) {
+                const value = localStorage.getItem(localStorage.key(i));
+                totalSize += value ? value.length : 0;
+            }
+            
+            const div = document.getElementById('storageInfo');
+            div.innerHTML = `
+                <p><strong>Total Keys:</strong> ${localStorage.length}</p>
+                <p><strong>Total Size:</strong> ${(totalSize / 1024).toFixed(2)} KB</p>
+                <p><strong>Limit:</strong> ~5-10 MB (browser dependent)</p>
+            `;
+        }
+
+        // Auto-load on page load
+        window.onload = function() {
+            showAllKeys();
+            showResumeData();
+        };
+    </script>
+</body>
+</html>

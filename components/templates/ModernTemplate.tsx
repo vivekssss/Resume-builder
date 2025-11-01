@@ -16,37 +16,37 @@ export function ModernTemplate() {
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
           {personalInfo.email && (
             <div className="flex items-center gap-1">
-              <Mail className="h-3 w-3" />
+              <Mail className="h-3 w-3 flex-shrink-0" style={{ minWidth: '12px' }} />
               <span>{personalInfo.email}</span>
             </div>
           )}
           {personalInfo.phone && (
             <div className="flex items-center gap-1">
-              <Phone className="h-3 w-3" />
+              <Phone className="h-3 w-3 flex-shrink-0" style={{ minWidth: '12px' }} />
               <span>{personalInfo.phone}</span>
             </div>
           )}
           {personalInfo.location && (
             <div className="flex items-center gap-1">
-              <MapPin className="h-3 w-3" />
+              <MapPin className="h-3 w-3 flex-shrink-0" style={{ minWidth: '12px' }} />
               <span>{personalInfo.location}</span>
             </div>
           )}
           {personalInfo.linkedin && (
             <div className="flex items-center gap-1">
-              <Linkedin className="h-3 w-3" />
+              <Linkedin className="h-3 w-3 flex-shrink-0" style={{ minWidth: '12px' }} />
               <span>{personalInfo.linkedin}</span>
             </div>
           )}
           {personalInfo.github && (
             <div className="flex items-center gap-1">
-              <Github className="h-3 w-3" />
+              <Github className="h-3 w-3 flex-shrink-0" style={{ minWidth: '12px' }} />
               <span>{personalInfo.github}</span>
             </div>
           )}
           {personalInfo.website && (
             <div className="flex items-center gap-1">
-              <Globe className="h-3 w-3" />
+              <Globe className="h-3 w-3 flex-shrink-0" style={{ minWidth: '12px' }} />
               <span>{personalInfo.website}</span>
             </div>
           )}
@@ -77,9 +77,12 @@ export function ModernTemplate() {
                   <p>{exp.location}</p>
                 </div>
               </div>
-              <ul className="list-disc list-inside text-sm space-y-1 text-gray-700">
+              <ul className="space-y-1 text-sm text-gray-700" style={{ paddingLeft: '1.25rem' }}>
                 {exp.description.map((desc, i) => (
-                  <li key={i}>{renderMarkdown(desc)}</li>
+                  <li key={i} className="relative" style={{ paddingLeft: '0.5rem' }}>
+                    <span className="absolute left-0" style={{ left: '-1rem' }}>•</span>
+                    {renderMarkdown(desc)}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -95,9 +98,19 @@ export function ModernTemplate() {
             <div key={project.id} className="mb-3">
               <h3 className="font-bold text-gray-900">{project.name}</h3>
               <p className="text-sm text-gray-700 mb-1">{project.description}</p>
-              <p className="text-xs text-gray-600">
-                <span className="font-semibold">Technologies:</span> {project.technologies.join(", ")}
-              </p>
+              {project.technologies && project.technologies.length > 0 && (
+                <p className="text-xs text-gray-600 mb-0.5">
+                  <span className="font-semibold">Technologies:</span> {project.technologies.join(", ")}
+                </p>
+              )}
+              {project.link && (
+                <p className="text-xs text-blue-600">
+                  <span className="font-semibold">Link:</span>{" "}
+                  <a href={project.link} className="underline hover:text-blue-800" target="_blank" rel="noopener noreferrer">
+                    {project.link}
+                  </a>
+                </p>
+              )}
             </div>
           ))}
         </div>

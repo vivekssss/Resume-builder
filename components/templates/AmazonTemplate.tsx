@@ -56,7 +56,12 @@ export function AmazonTemplate() {
             <div key={project.id} className="mb-3">
               <p className="font-bold text-xs">{project.name}</p>
               <p className="text-xs leading-relaxed mb-1">{project.description}</p>
-              <p className="text-xs italic">Technologies: {project.technologies.join(", ")}</p>
+              {project.technologies && project.technologies.length > 0 && (
+                <p className="text-xs italic">Technologies: {project.technologies.join(", ")}</p>
+              )}
+              {project.link && (
+                <p className="text-xs text-blue-700 mt-0.5">Link: {project.link}</p>
+              )}
             </div>
           ))}
         </div>

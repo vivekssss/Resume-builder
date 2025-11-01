@@ -18,9 +18,18 @@ import { GoogleAuthButton } from "./GoogleAuthButton";
 import { AutoSaveIndicator } from "./AutoSaveIndicator";
 import { DataRestoreButton } from "./DataRestoreButton";
 import { RestorePreviewDrawer } from "./RestorePreviewDrawer";
-import { Download, FileText, Sparkles, BarChart3, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { DebugStore } from "./DebugStore";
+import { Download, FileText, Sparkles, BarChart3, ArrowLeft, ChevronLeft, ChevronRight, Share2, FileImage, FileDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { toast } from 'sonner';
 
 interface ResumeBuilderProps {
   onBack?: () => void;
@@ -49,16 +58,27 @@ export function ResumeBuilder({ onBack }: ResumeBuilderProps) {
 
   const handleDownloadPDF = async () => {
     const element = document.getElementById('resume-preview');
-    if (!element) return;
+    if (!element) {
+      alert('❌ Resume preview not found. Please wait for the page to load.');
+      return;
+    }
 
     try {
+      console.log('📄 Generating PDF...');
+      toast.info('Generating PDF... Please wait');
+      
+      // Capture with moderate quality
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
         logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: 1200,
+        windowHeight: 1600,
       });
 
       const imgData = canvas.toDataURL('image/png');
+      
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -67,17 +87,198 @@ export function ResumeBuilder({ onBack }: ResumeBuilderProps) {
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      // Calculate to fit on ONE page with small margins
+      const margin = 5; // 5mm margins
+      const availableWidth = pdfWidth - (margin * 2);
+      const availableHeight = pdfHeight - (margin * 2);
+      
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 0;
-
-      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-      pdf.save(`${resumeData.personalInfo.fullName || 'Resume'}.pdf`);
+      const imgRatio = imgHeight / imgWidth;
+      
+      // Scale to fit width, then compress height if needed
+      let finalWidth = availableWidth;
+      let finalHeight = availableWidth * imgRatio;
+      
+      // If too tall, scale down to fit height
+      if (finalHeight > availableHeight) {
+        finalHeight = availableHeight;
+        finalWidth = finalHeight / imgRatio;
+      }
+      
+      // Center on page
+      const xPos = (pdfWidth - finalWidth) / 2;
+      const yPos = margin;
+      
+      pdf.addImage(
+        imgData,
+        'PNG',
+        xPos,
+        yPos,
+        finalWidth,
+        finalHeight,
+        undefined,
+        'FAST' // Use FAST compression
+      );
+      
+      const fileName = store.resumeData?.personalInfo?.fullName 
+        ? `${store.resumeData.personalInfo.fullName.replace(/\s+/g, '_')}_Resume.pdf`
+        : 'My_Resume.pdf';
+      
+      pdf.save(fileName);
+      console.log('✅ PDF downloaded:', fileName);
+      toast.success('PDF downloaded successfully! 📄');
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('❌ PDF generation error:', error);
+      toast.error('Error generating PDF. Please try again.');
     }
+  };
+
+  const handleDownloadImage = async (format: 'png' | 'jpg' = 'png') => {
+    const element = document.getElementById('resume-preview');
+    if (!element) {
+      alert('❌ Resume preview not found.');
+      return;
+    }
+
+    try {
+      console.log(`📸 Generating ${format.toUpperCase()} image...`);
+      const canvas = await html2canvas(element, {
+        scale: 3,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const fileName = store.resumeData?.personalInfo?.fullName 
+          ? `${store.resumeData.personalInfo.fullName.replace(/\s+/g, '_')}_Resume.${format}`
+          : `My_Resume.${format}`;
+        
+        link.href = url;
+        link.download = fileName;
+        link.click();
+        URL.revokeObjectURL(url);
+        console.log(`✅ ${format.toUpperCase()} downloaded:`, fileName);
+        toast.success(`${format.toUpperCase()} image downloaded! 🖼️`);
+      }, `image/${format}`, 0.95);
+    } catch (error) {
+      console.error(`❌ ${format.toUpperCase()} generation error:`, error);
+      toast.error(`Error generating ${format.toUpperCase()}. Please try again.`);
+    }
+  };
+
+  const handleDownloadDOC = () => {
+    const element = document.getElementById('resume-preview');
+    if (!element) {
+      alert('❌ Resume preview not found.');
+      return;
+    }
+
+    try {
+      console.log('📝 Generating DOC...');
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Resume</title>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+            h1 { color: #333; font-size: 24px; margin-bottom: 10px; }
+            h2 { color: #555; font-size: 18px; margin-top: 20px; margin-bottom: 10px; }
+            p { margin: 5px 0; }
+          </style>
+        </head>
+        <body>
+          ${element.innerHTML}
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob(['\ufeff', htmlContent], {
+        type: 'application/msword'
+      });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const fileName = store.resumeData?.personalInfo?.fullName 
+        ? `${store.resumeData.personalInfo.fullName.replace(/\s+/g, '_')}_Resume.doc`
+        : 'My_Resume.doc';
+      
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      URL.revokeObjectURL(url);
+      console.log('✅ DOC downloaded:', fileName);
+      toast.success('DOC file downloaded! 📝');
+    } catch (error) {
+      console.error('❌ DOC generation error:', error);
+      toast.error('Error generating DOC. Please try again.');
+    }
+  };
+
+  const handleShare = async () => {
+    const element = document.getElementById('resume-preview');
+    if (!element) {
+      alert('❌ Resume preview not found.');
+      return;
+    }
+
+    try {
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+
+        const fileName = store.resumeData?.personalInfo?.fullName 
+          ? `${store.resumeData.personalInfo.fullName.replace(/\s+/g, '_')}_Resume.png`
+          : 'My_Resume.png';
+
+        const file = new File([blob], fileName, { type: 'image/png' });
+
+        if (navigator.share && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              title: 'My Resume',
+              text: 'Check out my resume!',
+              files: [file],
+            });
+            console.log('✅ Resume shared successfully');
+            toast.success('Resume shared successfully! 🔗');
+          } catch (error) {
+            if ((error as Error).name !== 'AbortError') {
+              console.error('❌ Share error:', error);
+              toast.error('Share cancelled');
+              copyShareLink();
+            }
+          }
+        } else {
+          copyShareLink();
+        }
+      }, 'image/png');
+    } catch (error) {
+      console.error('❌ Share error:', error);
+      copyShareLink();
+    }
+  };
+
+  const copyShareLink = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      toast.success('Link copied to clipboard! 📋');
+    }).catch(() => {
+      toast.info('Share URL: ' + url);
+    });
   };
 
   return (
@@ -97,10 +298,40 @@ export function ResumeBuilder({ onBack }: ResumeBuilderProps) {
         <div className="flex items-center gap-3">
           <RestorePreviewDrawer />
           <GoogleAuthButton />
-          <Button onClick={handleDownloadPDF}>
-            <Download className="mr-2 h-4 w-4" />
-            Download PDF
-          </Button>
+          
+          {/* Download Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button>
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={handleDownloadPDF}>
+                <FileText className="mr-2 h-4 w-4" />
+                Download as PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDownloadDOC}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Download as DOC
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleDownloadImage('png')}>
+                <FileImage className="mr-2 h-4 w-4" />
+                Download as PNG
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDownloadImage('jpg')}>
+                <FileImage className="mr-2 h-4 w-4" />
+                Download as JPG
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleShare}>
+                <Share2 className="mr-2 h-4 w-4" />
+                Share Resume
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -178,6 +409,9 @@ export function ResumeBuilder({ onBack }: ResumeBuilderProps) {
           </div>
         </div>
       </div>
+      
+      {/* Debug Component - Remove in production */}
+      <DebugStore />
     </div>
   );
 }

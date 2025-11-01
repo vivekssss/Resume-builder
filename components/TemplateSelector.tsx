@@ -44,7 +44,7 @@ const templates = [
 ];
 
 export function TemplateSelector() {
-  const { selectedTemplate, setSelectedTemplate } = useResumeStore();
+  const { selectedTemplate, setTemplate } = useResumeStore();
 
   return (
     <div>
@@ -58,7 +58,7 @@ export function TemplateSelector() {
                 ? "ring-2 ring-blue-600 bg-blue-50"
                 : "hover:bg-gray-50"
             }`}
-            onClick={() => setSelectedTemplate(template.id)}
+            onClick={() => setTemplate(template.id)}
           >
             <div className="relative">
               <div className={`h-24 rounded ${template.preview} mb-2`}></div>

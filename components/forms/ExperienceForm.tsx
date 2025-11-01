@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Plus, Trash2, Sparkles, Edit2, X, Loader2 } from "lucide-react";
 import { aiService } from "@/lib/ai-service";
+import { toast } from 'sonner';
 
 export function ExperienceForm() {
   const { resumeData, addExperience, updateExperience, deleteExperience } = useResumeStore();
@@ -39,6 +40,7 @@ export function ExperienceForm() {
           description: formData.description?.filter(d => d.trim()) || [],
         });
         setEditingId(null);
+        toast.success('Experience updated successfully! ✅');
       } else {
         // Add new experience
         const newExp: WorkExperience = {
@@ -52,6 +54,7 @@ export function ExperienceForm() {
           description: formData.description?.filter(d => d.trim()) || [],
         };
         addExperience(newExp);
+        toast.success('Experience added successfully! 💼');
       }
       
       // Reset form
@@ -64,6 +67,32 @@ export function ExperienceForm() {
         current: false,
         description: [""],
       });
+    }
+  };
+
+  const handleDelete = (id: string, company: string) => {
+    console.log('🗑️  Delete button clicked');
+    console.log('  Company:', company);
+    console.log('  ID:', id);
+    console.log('  Current experiences:', resumeData.experience.length);
+    console.log('  Experience IDs:', resumeData.experience.map(e => e.id));
+    
+    // Direct delete for testing
+    try {
+      deleteExperience(id);
+      console.log('✅ deleteExperience called successfully');
+      
+      // Check if it actually deleted
+      setTimeout(() => {
+        const current = useResumeStore.getState().resumeData.experience;
+        console.log('  After delete, experiences:', current.length);
+        console.log('  Remaining IDs:', current.map(e => e.id));
+      }, 100);
+      
+      toast.success(`${company} deleted! 🗑️`);
+    } catch (error) {
+      console.error('❌ Delete error:', error);
+      toast.error('Failed to delete experience');
     }
   };
 
@@ -277,12 +306,12 @@ export function ExperienceForm() {
         </div>
 
         <div className="flex gap-2">
-          <Button onClick={handleAdd} className="flex-1">
+          <Button type="button" onClick={handleAdd} className="flex-1">
             <Plus className="mr-2 h-4 w-4" />
             {editingId ? 'Update Experience' : 'Add Experience'}
           </Button>
           {editingId && (
-            <Button onClick={handleCancelEdit} variant="outline">
+            <Button type="button" onClick={handleCancelEdit} variant="outline">
               Cancel
             </Button>
           )}
@@ -305,6 +334,7 @@ export function ExperienceForm() {
                 </div>
                 <div className="flex gap-2">
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => handleEdit(exp)}
@@ -312,9 +342,11 @@ export function ExperienceForm() {
                     Edit
                   </Button>
                   <Button
+                    type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => deleteExperience(exp.id)}
+                    onClick={() => handleDelete(exp.id, exp.company)}
+                    className="hover:bg-red-50 hover:text-red-600"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

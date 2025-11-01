@@ -15,7 +15,9 @@ export function ManualRestoreButton() {
       if (stored) {
         const data = JSON.parse(stored);
         
-        // Clear existing data first
+        // IMPORTANT: Clear existing data first to prevent duplicates
+        console.log('🗑️  Clearing existing data to prevent duplicates...');
+        store.clearAllData();
         console.log('🔄 Restoring data from localStorage...');
         
         // Restore all data

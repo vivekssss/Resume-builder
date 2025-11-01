@@ -73,13 +73,20 @@ export function MicrosoftTemplate() {
             <div key={project.id} className="mb-3">
               <h3 className="font-bold text-gray-900 text-sm">{project.name}</h3>
               <p className="text-sm text-gray-700 mt-0.5">{project.description}</p>
-              <div className="flex flex-wrap gap-1 mt-1">
-                {project.technologies.map((tech, idx) => (
-                  <span key={idx} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
-                    {tech}
-                  </span>
-                ))}
-              </div>
+              {project.technologies && project.technologies.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {project.technologies.map((tech, idx) => (
+                    <span key={idx} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
+                      {tech}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {project.link && (
+                <p className="text-xs text-blue-600 mt-1">
+                  🔗 {project.link}
+                </p>
+              )}
             </div>
           ))}
         </div>

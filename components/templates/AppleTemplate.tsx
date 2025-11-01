@@ -58,7 +58,12 @@ export function AppleTemplate() {
             <div key={project.id} className="mb-4">
               <h3 className="text-lg font-medium">{project.name}</h3>
               <p className="text-sm text-gray-700 mt-1 leading-relaxed">{project.description}</p>
-              <p className="text-xs text-gray-500 mt-1">{project.technologies.join(" • ")}</p>
+              {project.technologies && project.technologies.length > 0 && (
+                <p className="text-xs text-gray-500 mt-1">{project.technologies.join(" • ")}</p>
+              )}
+              {project.link && (
+                <p className="text-xs text-blue-600 mt-1">🔗 {project.link}</p>
+              )}
             </div>
           ))}
         </div>

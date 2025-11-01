@@ -25,77 +25,159 @@ export function RestorePreviewDrawer() {
 
   const checkForSavedData = () => {
     try {
-      const stored = localStorage.getItem('resume_data');
-      const timestamp = localStorage.getItem('resume_timestamp');
+      console.log('🔍 Checking all localStorage keys...');
+      
+      // Log all localStorage keys for debugging
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        console.log(`Key ${i}: ${key}`);
+      }
+      
+      // Try multiple possible keys
+      let stored = localStorage.getItem('resume_data');
+      let timestamp = localStorage.getItem('resume_timestamp');
+      
+      // If not found, try other possible keys
+      if (!stored) {
+        console.log('❌ resume_data not found, trying resume_data_timestamp...');
+        stored = localStorage.getItem('resume_data_timestamp');
+      }
+      
+      // Try resumeData (different format)
+      if (!stored) {
+        console.log('❌ Trying with different key formats...');
+        // Check all keys that might contain resume data
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.includes('resume') && !key.includes('timestamp')) {
+            stored = localStorage.getItem(key);
+            console.log(`✅ Found data in key: ${key}`);
+            break;
+          }
+        }
+      }
       
       if (stored) {
+        console.log('📄 Raw stored data:', stored.substring(0, 200) + '...');
         const data = JSON.parse(stored);
-        setSavedData({ ...data, timestamp });
+        console.log('📊 Parsed data structure:', Object.keys(data));
+        console.log('👤 Personal Info:', data.personalInfo);
+        
+        // Handle different data structures
+        let resumeData = data;
+        
+        // If data has a 'state' wrapper (from zustand persist)
+        if (data.state) {
+          console.log('🔄 Unwrapping zustand state...');
+          resumeData = data.state;
+        }
+        
+        // If data has a 'resumeData' wrapper
+        if (data.resumeData) {
+          console.log('🔄 Unwrapping resumeData...');
+          resumeData = data.resumeData;
+        }
+        
+        console.log('✅ Final resume data:', resumeData);
+        
+        setSavedData({ ...resumeData, timestamp });
         setHasData(true);
         setIsOpen(true);
       } else {
-        alert('❌ No saved data found in browser storage.');
+        console.error('❌ No resume data found in any localStorage key');
+        alert('❌ No saved data found in browser storage.\n\nTip: Fill out some form fields and wait for auto-save.');
       }
     } catch (error) {
-      console.error('Error loading preview:', error);
-      alert('❌ Error loading saved data.');
+      console.error('❌ Error loading preview:', error);
+      alert('❌ Error loading saved data. Check console for details.');
     }
   };
 
   const handleRestore = () => {
-    if (!savedData) return;
+    if (!savedData) {
+      alert('❌ No data to restore');
+      return;
+    }
 
     try {
-      console.log('🔄 Restoring data...', savedData);
+      console.log('🔄 Starting restore process...');
+      console.log('📦 Data to restore:', savedData);
       
-      // Restore all data
+      let restored = false;
+      console.log('📂 Saved data keys:', Object.keys(savedData));
+      console.log('📂 Full saved data:', savedData);
+      
+      // IMPORTANT: Clear all existing data first to prevent duplicates
+      console.log('🗑️  Clearing existing data to prevent duplicates...');
+      store.clearAllData();
+      
       if (savedData.personalInfo) {
+        console.log('👤 Restoring personal info:', savedData.personalInfo);
         store.updatePersonalInfo(savedData.personalInfo);
         console.log('✅ Personal info restored');
+        restored = true;
+      } else {
+        console.warn('⚠️  No personal info to restore');
       }
       
       if (savedData.experience && savedData.experience.length > 0) {
-        savedData.experience.forEach((exp: any) => {
+        console.log('💼 Restoring experience:', savedData.experience.length, 'items');
+        savedData.experience.forEach((exp: any, index: number) => {
+          console.log(`  Adding experience ${index + 1}:`, exp.company);
           store.addExperience(exp);
         });
         console.log('✅ Experience restored:', savedData.experience.length, 'items');
+        restored = true;
       }
       
       if (savedData.education && savedData.education.length > 0) {
-        savedData.education.forEach((edu: any) => {
+        console.log('🎓 Restoring education:', savedData.education.length, 'items');
+        savedData.education.forEach((edu: any, index: number) => {
+          console.log(`  Adding education ${index + 1}:`, edu.institution);
           store.addEducation(edu);
         });
         console.log('✅ Education restored:', savedData.education.length, 'items');
+        restored = true;
       }
       
       if (savedData.skills) {
+        console.log('🛠️  Restoring skills:', savedData.skills);
         store.updateSkills(savedData.skills);
         console.log('✅ Skills restored');
+        restored = true;
       }
       
       if (savedData.projects && savedData.projects.length > 0) {
+        console.log('🚀 Restoring projects:', savedData.projects.length, 'items');
         savedData.projects.forEach((proj: any) => {
           store.addProject(proj);
         });
         console.log('✅ Projects restored:', savedData.projects.length, 'items');
+        restored = true;
       }
       
-      if (savedData.certifications) {
+      if (savedData.certifications && savedData.certifications.length > 0) {
         store.updateCertifications(savedData.certifications);
+        restored = true;
       }
       
-      if (savedData.achievements) {
+      if (savedData.achievements && savedData.achievements.length > 0) {
         store.updateAchievements(savedData.achievements);
+        restored = true;
       }
       
       setIsOpen(false);
-      alert('✅ Resume data restored successfully! Check your form fields.');
       
-      // Scroll to top to see the data
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (restored) {
+        alert('✅ Resume data restored successfully!\n\nScroll down to see your data in the form fields.');
+        // Scroll to top to see the data
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        alert('⚠️  No data was restored. The saved data might be empty.');
+      }
     } catch (error) {
-      console.error('Error restoring data:', error);
-      alert('❌ Error restoring data. Check console for details.');
+      console.error('❌ Error restoring data:', error);
+      alert('❌ Error restoring data:\n' + (error as Error).message + '\n\nCheck console for details.');
     }
   };
 

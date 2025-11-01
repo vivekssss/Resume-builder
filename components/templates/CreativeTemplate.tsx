@@ -85,13 +85,18 @@ export function CreativeTemplate() {
                 <div key={project.id} className="p-3 bg-gray-50 rounded-lg border-l-4 border-blue-600">
                   <h3 className="font-bold text-gray-900 text-sm">{project.name}</h3>
                   <p className="text-xs text-gray-700 mt-1">{project.description}</p>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {project.technologies.map((tech, idx) => (
-                      <span key={idx} className="px-2 py-0.5 bg-white text-gray-600 text-xs rounded border">
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
+                  {project.technologies && project.technologies.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {project.technologies.map((tech, idx) => (
+                        <span key={idx} className="px-2 py-0.5 bg-white text-gray-600 text-xs rounded border">
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {project.link && (
+                    <p className="text-xs text-blue-600 mt-2">🔗 {project.link}</p>
+                  )}
                 </div>
               ))}
             </div>
