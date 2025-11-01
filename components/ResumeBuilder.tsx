@@ -17,6 +17,7 @@ import { ResumeUploader } from "./ResumeUploader";
 import { GoogleAuthButton } from "./GoogleAuthButton";
 import { AutoSaveIndicator } from "./AutoSaveIndicator";
 import { DataRestoreButton } from "./DataRestoreButton";
+import { RestorePreviewDrawer } from "./RestorePreviewDrawer";
 import { Download, FileText, Sparkles, BarChart3, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -94,6 +95,7 @@ export function ResumeBuilder({ onBack }: ResumeBuilderProps) {
           <AutoSaveIndicator />
         </div>
         <div className="flex items-center gap-3">
+          <RestorePreviewDrawer />
           <GoogleAuthButton />
           <Button onClick={handleDownloadPDF}>
             <Download className="mr-2 h-4 w-4" />

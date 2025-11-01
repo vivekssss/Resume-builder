@@ -7,56 +7,25 @@ import { Check, Cloud } from 'lucide-react';
 export function AutoSaveIndicator() {
   const [lastSaved, setLastSaved] = useState<Date>(new Date());
   const store = useResumeStore();
-  const { resumeData } = store;
   const prevDataRef = useRef<string>('');
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
   const hasLoadedRef = useRef(false);
 
-  // Load from localStorage on mount
+  // Load from localStorage on mount - DISABLED
+  // Auto-loading is now handled by preview drawer
   useEffect(() => {
     if (!hasLoadedRef.current) {
-      try {
-        const stored = localStorage.getItem('resume_data');
-        if (stored) {
-          const data = JSON.parse(stored);
-          // Restore all data
-          if (data.personalInfo) store.updatePersonalInfo(data.personalInfo);
-          if (data.experience) {
-            data.experience.forEach((exp: any) => {
-              if (!resumeData.experience.find(e => e.id === exp.id)) {
-                store.addExperience(exp);
-              }
-            });
-          }
-          if (data.education) {
-            data.education.forEach((edu: any) => {
-              if (!resumeData.education.find(e => e.id === edu.id)) {
-                store.addEducation(edu);
-              }
-            });
-          }
-          if (data.skills) store.updateSkills(data.skills);
-          if (data.projects) {
-            data.projects.forEach((proj: any) => {
-              if (!resumeData.projects.find(p => p.id === proj.id)) {
-                store.addProject(proj);
-              }
-            });
-          }
-          console.log('✅ Resume data loaded from localStorage');
-        }
-      } catch (error) {
-        console.error('Error loading from localStorage:', error);
-      }
       hasLoadedRef.current = true;
+      console.log('ℹ️ Auto-load disabled. Use "Load Saved Data" button instead.');
     }
   }, []);
 
   useEffect(() => {
     if (!hasLoadedRef.current) return; // Skip until initial load is done
     
-    // Convert current state to string for comparison
-    const currentData = JSON.stringify(resumeData);
+    // Get store data - use the actual state object
+    const storeState = store.resumeData || store;
+    const currentData = JSON.stringify(storeState);
     
     // Only update if data actually changed (skip initial render)
     if (prevDataRef.current && prevDataRef.current !== currentData) {
@@ -86,7 +55,7 @@ export function AutoSaveIndicator() {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [resumeData]);
+  }, [store]);
 
   return (
     <div className="flex items-center gap-2 text-xs text-gray-500">

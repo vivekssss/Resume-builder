@@ -32,11 +32,13 @@ const authSlice = createSlice({
       state.error = null;
     },
     loginSuccess: (state, action: PayloadAction<{ user: User; accessToken: string }>) => {
+      console.log('🔄 authSlice loginSuccess reducer called with:', action.payload);
       state.user = action.payload.user;
       state.accessToken = action.payload.accessToken;
       state.isAuthenticated = true;
       state.loading = false;
       state.error = null;
+      console.log('✅ authSlice state updated:', state);
     },
     loginFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;

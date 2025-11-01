@@ -17,8 +17,12 @@ export function DataRestoreButton() {
     const checkStoredData = () => {
       try {
         const stored = localStorage.getItem('resume_data');
+        console.log('📦 Checking localStorage for resume_data:', stored ? 'Found' : 'Not found');
+        
         if (stored) {
           const data = JSON.parse(stored);
+          console.log('📄 Parsed data:', data);
+          
           // Check if there's meaningful data
           const hasStored = !!(
             data.personalInfo?.fullName ||
@@ -27,6 +31,7 @@ export function DataRestoreButton() {
             data.skills?.technical?.length > 0
           );
           
+          console.log('✅ Has meaningful data:', hasStored);
           setHasData(hasStored);
           
           if (hasStored) {
@@ -45,7 +50,10 @@ export function DataRestoreButton() {
       }
     };
 
+    // Check immediately and also after a short delay
     checkStoredData();
+    const timer = setTimeout(checkStoredData, 1000);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleRestore = () => {

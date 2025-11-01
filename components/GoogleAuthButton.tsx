@@ -11,13 +11,31 @@ export function GoogleAuthButton() {
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
 
+  // Debug log
+  console.log('🔍 Auth state:', { isAuthenticated, user });
+
   // Load saved login on mount
   useEffect(() => {
     const savedAuth = localStorage.getItem('google_auth');
     if (savedAuth && !isAuthenticated) {
       try {
         const authData = JSON.parse(savedAuth);
-        dispatch(loginSuccess(authData));
+        // Check if it's old format and convert
+        if (authData.token && !authData.accessToken) {
+          const converted = {
+            user: {
+              id: authData.email,
+              email: authData.email,
+              name: authData.name,
+              picture: authData.picture,
+            },
+            accessToken: authData.token,
+          };
+          dispatch(loginSuccess(converted));
+          localStorage.setItem('google_auth', JSON.stringify(converted));
+        } else {
+          dispatch(loginSuccess(authData));
+        }
         console.log('✅ Google login restored from localStorage');
       } catch (error) {
         console.error('Error restoring login:', error);
@@ -28,27 +46,38 @@ export function GoogleAuthButton() {
 
   const handleLoginSuccess = (credentialResponse: any) => {
     if (credentialResponse.credential) {
-      // Decode JWT to get user info
-      const base64Url = credentialResponse.credential.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
+      try {
+        // Decode JWT to get user info
+        const base64Url = credentialResponse.credential.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
 
-      const userData = JSON.parse(jsonPayload);
-      
-      const authData = {
-        email: userData.email,
-        name: userData.name,
-        picture: userData.picture,
-        token: credentialResponse.credential,
-      };
-      
-      // Save to localStorage
-      localStorage.setItem('google_auth', JSON.stringify(authData));
-      
-      dispatch(loginSuccess(authData));
-      console.log('✅ Logged in with Google');
+        const userData = JSON.parse(jsonPayload);
+        
+        const authData = {
+          user: {
+            id: userData.sub || userData.email,
+            email: userData.email,
+            name: userData.name,
+            picture: userData.picture,
+          },
+          accessToken: credentialResponse.credential,
+        };
+        
+        console.log('🔑 Login data:', authData);
+        
+        // Save to localStorage (save the whole object)
+        localStorage.setItem('google_auth', JSON.stringify(authData));
+        
+        // Dispatch to Redux with correct structure
+        dispatch(loginSuccess(authData));
+        
+        console.log('✅ Logged in with Google:', authData.user.name);
+      } catch (error) {
+        console.error('❌ Login error:', error);
+      }
     }
   };
 
